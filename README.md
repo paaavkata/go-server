@@ -32,7 +32,7 @@ mgr := goserver.FromViper("identity-service")
 mgr.StartObservability()
 
 mgr.AddReadinessCheck("postgres", func(ctx context.Context) error { return db.PingContext(ctx) })
-mgr.AddReadinessCheck("kafka", func(ctx context.Context) error { return producer.Ping(ctx) })
+mgr.AddReadinessCheck("nats", func(ctx context.Context) error { return producer.Ping(ctx) })
 
 e := echo.New()
 e.Use(mgr.EchoMetricsMiddleware())
@@ -46,14 +46,14 @@ mgr.Run(
 )
 ```
 
-## HTTP + Kafka consumer
+## HTTP + NATS consumer
 
 Register the consumer-stop and resource closes as shutdown hooks (they run LIFO):
 
 ```go
 mgr.OnShutdown("postgres", func(ctx context.Context) error { return db.Close() })
-mgr.OnShutdown("kafka-consumer", func(ctx context.Context) error { consumer.Stop(); return nil })
-// kafka-consumer stops first, postgres closes last.
+mgr.OnShutdown("nats-consumer", func(ctx context.Context) error { consumer.Stop(); return nil })
+// nats-consumer stops first, postgres closes last.
 ```
 
 ## Pure worker (no business HTTP server)
