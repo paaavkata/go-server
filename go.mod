@@ -4,7 +4,7 @@ go 1.26.4
 
 require (
 	github.com/labstack/echo/v4 v4.11.4
-	github.com/paaavkata/go-logger v0.1.0
+	github.com/paaavkata/go-logger v0.1.2
 	github.com/prometheus/client_golang v1.19.1
 )
 
@@ -31,5 +31,3 @@ require (
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 )
-
-replace github.com/paaavkata/go-logger => ../go-logger
