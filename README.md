@@ -19,11 +19,18 @@ production-readiness contract from `K8S_HARDENING_PLAN`:
 |---|---|---|
 | `APP_PORT` | `8080` | Business API port |
 | `METRICS_PORT` | `9090` | Observability port (livez/readyz/startupz/metrics) |
-| `SHUTDOWN_GRACE_SECONDS` | `25` | Hard bound on the whole shutdown sequence |
+| `SHUTDOWN_GRACE_SECONDS` | `22` | Hard bound on the whole shutdown sequence |
 | `READINESS_DRAIN_SECONDS` | `5` | Wait after flipping 503 so endpoint removal propagates |
 | `CHECK_TIMEOUT_SECONDS` | `2` | Per-readiness/liveness-check timeout |
+| `HTTP_READ_HEADER_TIMEOUT_SECONDS` | `10` | `ServeEcho` server: time to receive request headers |
+| `HTTP_READ_TIMEOUT_SECONDS` | `30` | `ServeEcho` server: time to receive the whole request |
+| `HTTP_WRITE_TIMEOUT_SECONDS` | `120` | `ServeEcho` server: time to write the response. Set `0` for streaming / large downloads / WebSockets |
+| `HTTP_IDLE_TIMEOUT_SECONDS` | `120` | `ServeEcho` server: keep-alive idle time |
 
-Keep `SHUTDOWN_GRACE_SECONDS` < the chart's `terminationGracePeriodSeconds`.
+Shutdown budget rule: `READINESS_DRAIN_SECONDS + SHUTDOWN_GRACE_SECONDS` must stay at
+least 3s below the chart's `terminationGracePeriodSeconds` (default 30s), or late hooks
+are SIGKILLed. Defaults: 5 + 22 = 27. Raise both together. `0` on an HTTP timeout
+disables it; unset or invalid takes the default.
 
 ## HTTP service (Echo)
 
@@ -40,10 +47,9 @@ e.Use(mgr.EchoMetricsMiddleware())
 
 mgr.SetStarted() // after migrations / warm-up
 
-mgr.Run(
-    func() error { return e.Start(":" + os.Getenv("APP_PORT")) },
-    func(ctx context.Context) error { return e.Shutdown(ctx) },
-)
+// ServeEcho wraps e in an http.Server with the HTTP_* timeouts (never use
+// bare e.Start: it has no timeouts).
+mgr.Run(mgr.ServeEcho(e, ":"+mgr.Config().AppPort))
 ```
 
 ## HTTP + NATS consumer

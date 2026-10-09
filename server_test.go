@@ -14,8 +14,8 @@ func TestNewDefaultPorts(t *testing.T) {
 	if mgr.cfg.MetricsPort != "9090" {
 		t.Errorf("default MetricsPort: want 9090, got %s", mgr.cfg.MetricsPort)
 	}
-	if mgr.cfg.ShutdownGrace != 25*time.Second {
-		t.Errorf("default ShutdownGrace: want 25s, got %s", mgr.cfg.ShutdownGrace)
+	if mgr.cfg.ShutdownGrace != 22*time.Second {
+		t.Errorf("default ShutdownGrace: want 22s, got %s", mgr.cfg.ShutdownGrace)
 	}
 	if mgr.cfg.ReadinessDrainWait != 5*time.Second {
 		t.Errorf("default ReadinessDrainWait: want 5s, got %s", mgr.cfg.ReadinessDrainWait)
