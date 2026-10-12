@@ -56,6 +56,11 @@ mgr.Run(mgr.ServeEcho(e, ":"+mgr.Config().AppPort))
 
 ## Request id (X-Request-ID / trace_id)
 
+`ServeEcho` also registers `EchoAccessLogMiddleware()` (v0.3.1): one JSON line per
+request (`message=access`, method, path, status, bytes, latency_ms, remote_ip,
+user_agent) written through go-logger with the request context, so it carries
+`trace_id`. Handlers that want the id on their own lines use `logger.InfofMap(ctx, ...)`.
+
 `ServeEcho` registers `goserver.EchoRequestIDMiddleware()` with `e.Pre`, so every request
 served through it:
 

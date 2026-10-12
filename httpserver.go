@@ -34,6 +34,7 @@ type HTTPTimeouts struct {
 //	mgr.Run(mgr.ServeEcho(e, ":"+mgr.Config().AppPort))
 func (m *Manager) ServeEcho(e *echo.Echo, addr string) (func() error, func(context.Context) error) {
 	e.Pre(EchoRequestIDMiddleware())
+	e.Use(EchoAccessLogMiddleware())
 	return m.ServeHTTP(e, addr)
 }
 
