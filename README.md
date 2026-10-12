@@ -10,6 +10,8 @@ production-readiness contract from `K8S_HARDENING_PLAN`:
 - **Metrics** at `/metrics`: Go runtime + process collectors + HTTP middleware
   (`http_requests_total`, `http_request_duration_seconds`, `http_requests_in_flight` by
   `{method, route, code}`).
+- **Request id**: `X-Request-ID` echoed or generated on every `ServeEcho` request and logged
+  as `trace_id`; `RequestIDTransport` forwards it on outbound calls.
 - **Graceful shutdown**: SIGTERM → readiness 503 → wait for endpoint removal → drain in-flight
   HTTP → run shutdown hooks (LIFO) → close observability server, bounded by `ShutdownGrace`.
 
@@ -50,6 +52,24 @@ mgr.SetStarted() // after migrations / warm-up
 // ServeEcho wraps e in an http.Server with the HTTP_* timeouts (never use
 // bare e.Start: it has no timeouts).
 mgr.Run(mgr.ServeEcho(e, ":"+mgr.Config().AppPort))
+```
+
+## Request id (X-Request-ID / trace_id)
+
+`ServeEcho` registers `goserver.EchoRequestIDMiddleware()` with `e.Pre`, so every request
+served through it:
+
+- echoes an incoming `X-Request-ID` on the response, or generates one when absent;
+- stores the id in the request context under the plain string key `"trace_id"`
+  (`goserver.TraceIDKey`), which go-logger's `*Ctx` functions emit as `trace_id`.
+  Pass `c.Request().Context()` down from handlers so the id reaches the logs.
+
+Outbound service-to-service calls forward the same id with `RequestIDTransport`
+(nil `Base` means `http.DefaultTransport`; an explicitly set `X-Request-ID` is left alone):
+
+```go
+client := &http.Client{Transport: &goserver.RequestIDTransport{Base: http.DefaultTransport}}
+req, _ := http.NewRequestWithContext(c.Request().Context(), http.MethodGet, url, nil)
 ```
 
 ## HTTP + NATS consumer

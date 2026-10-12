@@ -27,10 +27,13 @@ type HTTPTimeouts struct {
 }
 
 // ServeEcho returns the (serve, shutdown) pair Run expects, backed by an
-// http.Server with the Manager's timeouts instead of Echo's bare e.Start.
+// http.Server with the Manager's timeouts instead of Echo's bare e.Start. It
+// also registers EchoRequestIDMiddleware as a Pre middleware, so every request
+// gets an X-Request-ID and a trace_id in its context.
 //
 //	mgr.Run(mgr.ServeEcho(e, ":"+mgr.Config().AppPort))
 func (m *Manager) ServeEcho(e *echo.Echo, addr string) (func() error, func(context.Context) error) {
+	e.Pre(EchoRequestIDMiddleware())
 	return m.ServeHTTP(e, addr)
 }
 
