@@ -45,7 +45,7 @@ disables it; unset or invalid takes the default.
 ## HTTP service (Echo)
 
 ```go
-mgr := goserver.FromViper("identity-service")
+mgr := goserver.FromViper("file-service")
 mgr.StartObservability()
 
 mgr.AddReadinessCheck("postgres", func(ctx context.Context) error { return db.PingContext(ctx) })
@@ -116,5 +116,6 @@ mgr.Registry().MustRegister(myCounter)
 
 ## Chart wiring
 
-Probes target the observability port; `service-deployment-helm-chart` (v1.1.0+) renders the
-`metrics` port, three probes, and a `ServiceMonitor` when its hardening flags are enabled.
+Probes target the observability port; `service-deployment-helm-chart` (current 1.7.2) renders the
+`metrics` port and the three probes by default (since 1.3.0), and a `ServiceMonitor` when
+`serviceMonitor.enabled` is set.
