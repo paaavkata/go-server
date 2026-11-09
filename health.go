@@ -46,12 +46,10 @@ func (h *healthRegistry) addReadiness(name string, fn CheckFunc) {
 func (h *healthRegistry) setStarted()  { h.started.Store(true) }
 func (h *healthRegistry) setDraining() { h.draining.Store(true) }
 
-// livezHandler — process-only; 200 while not draining and all liveness checks pass.
+// livezHandler is process-only: 200 while all liveness checks pass, including
+// during drain, so the kubelet does not restart a pod that is shutting down
+// gracefully. Only readiness flips to 503 while draining.
 func (h *healthRegistry) livezHandler(w http.ResponseWriter, r *http.Request) {
-	if h.draining.Load() {
-		writeStatus(w, http.StatusServiceUnavailable, "draining", "")
-		return
-	}
 	h.mu.RLock()
 	checks := append([]namedCheck(nil), h.liveness...)
 	h.mu.RUnlock()

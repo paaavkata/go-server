@@ -20,14 +20,20 @@ func TestLivezAlwaysOK(t *testing.T) {
 	}
 }
 
-func TestLivezDraining(t *testing.T) {
+// Liveness stays 200 during drain; only readiness flips.
+func TestLivezOKWhileDrainingReadyz503(t *testing.T) {
 	h := newHealthRegistry(2 * time.Second)
+	h.setStarted()
 	h.setDraining()
-	req := httptest.NewRequest(http.MethodGet, "/livez", nil)
 	rec := httptest.NewRecorder()
-	h.livezHandler(rec, req)
+	h.livezHandler(rec, httptest.NewRequest(http.MethodGet, "/livez", nil))
+	if rec.Code != http.StatusOK {
+		t.Errorf("livez: want 200 while draining, got %d", rec.Code)
+	}
+	rec = httptest.NewRecorder()
+	h.readyzHandler(rec, httptest.NewRequest(http.MethodGet, "/readyz", nil))
 	if rec.Code != http.StatusServiceUnavailable {
-		t.Errorf("want 503 while draining, got %d", rec.Code)
+		t.Errorf("readyz: want 503 while draining, got %d", rec.Code)
 	}
 }
 

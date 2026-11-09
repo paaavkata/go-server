@@ -5,8 +5,16 @@ production-readiness contract from `K8S_HARDENING_PLAN`:
 
 - **Two ports**: business API on `APP_PORT` (default `8080`); observability on `METRICS_PORT`
   (default `9090`) — the latter is **never** exposed via public ingress.
-- **Probes** on the observability port: `/livez` (process-only), `/readyz` (dependency checks,
-  503 while draining), `/startupz` (200 once init done).
+- **Probes** on the observability port: `/livez` (process-only liveness checks; stays 200
+  while draining so the kubelet never restarts a pod mid-drain), `/readyz` (dependency checks,
+  503 while draining), `/startupz` (200 once init done). The nats-consumer-self-heal change
+  plans a liveness watchdog branch in the same `/livez` handler; it does not change the drain
+  rule.
+- **Panic recovery**: `ServeEcho` registers `EchoRecoverMiddleware()` (v0.4.0). A handler
+  panic is logged as one structured error line (`message=panic recovered`, panic, method,
+  path, stack, trace_id) and answered with `500 {"status":"error","message":"internal server
+  error"}`; the process keeps serving. A service-level `echo/middleware.Recover()` is now
+  redundant but harmless (it handles the panic first).
 - **Metrics** at `/metrics`: Go runtime + process collectors + HTTP middleware
   (`http_requests_total`, `http_request_duration_seconds`, `http_requests_in_flight` by
   `{method, route, code}`).
